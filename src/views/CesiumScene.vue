@@ -4,15 +4,16 @@
     <div id="cesiumContainer"></div>
     <div id="infoBox"></div>
     <!-- 热力图 -->
-    <div id="heatmap" v-show="false"></div>
+    <!-- <div id="heatmap" v-show="false"></div> -->
   </div>
 </template>
 
 <script>
 import pointData from '@/assets/data/data.js'
-import heatmapFactory from '@/assets/util/heatmap.min.js'
-// import heatmapFactory from '@/assets/util/heatmap.js'
-// import heatmapFactory from '@/assets/util/CesiumHeatmap.js'
+import heatmapFactory from '@/utils/heatmap.min.js'
+// import heatmapFactory from '@/utils/CesiumHeatmap.js'
+import getDistance from '@/utils/distance.js'
+
 
 export default {
   name: "CesiumScene",
@@ -22,16 +23,17 @@ export default {
       heatMap: {
         // 热力图范围大小
         bounds: {
-          north: 22.238857,
-          south: 22.252857,
+          north: 22.230857,
+          south: 22.263857,
           west: 113.557621,
-          east: 113.571621
+          east: 113.582621
         },
         // 热力点对象数组
         pointsList: [
-          {x: 113.569568, y:22.249437, value: 90, radius: 10},
-          {x: 113.569768, y:22.250237, value: 80, radius: 20},
-          {x: 113.570221, y:22.249857, value: 100, radius: 30},
+          // {x: 113.569568, y:22.249437, value: 90, radius: 20},
+          // {x: 113.569768, y:22.250237, value: 80, radius: 50},
+          // {x: 113.570221, y:22.249857, value: 100, radius: 30},
+          {x: 113.570121, y: 22.244857, value: 100, radius: 1287}
         ],
         nuConfig: {
           maxOpacity: .5,  // 最高温处(默认红点处)的透明度
@@ -59,6 +61,8 @@ export default {
         geocoder: false,             // 地理位置查询定位控件
         homeButton: false,           // 默认相机位置控件
         timeline: false,             // 时间滚动条控件
+        baseLayerPicker: false,      //是否显示图层选择控件
+        selectionIndicator: false,
         navigationHelpButton: false, // 默认的相机控制提示控件
         fullscreenButton: false,     // 全屏控件
         scene3DOnly: true,           // 每个几何实例仅以3D渲染以节省GPU内存
@@ -74,7 +78,6 @@ export default {
         Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK
       );
       window.viewer = viewer;
-      console.log(new Cesium.CustomDataSource());
       // 热力图
       this.createHeatMap(this.heatMap.bounds, this.heatMap.pointsList);
       // 撒点
@@ -136,26 +139,30 @@ export default {
      */
     createHeatMap(bounds, pointsList, nuConfig = this.heatMap.nuConfig) {
 			let points = [];
-			let max = 100;
-			let width = 500;
-			let height = 500;
-
-      let {north, south, west, east} = bounds;
+      let max = 100;
+      const {north, south, west, east} = bounds;
+      const width = ((east - west) * 10000).toFixed(0);
+      const height = ((south - north) * 10000).toFixed(0);
+      // 动态生成canvas
+      this.createCanvas(width, height);
+      // 获取半径比值
+      const scale = this.getMaxRadius(bounds, width, height);
 
       for(let item of pointsList) {
         let point = {
           // 将点的地理坐标转换为canvas上的坐标,保留3位小数使得经纬度转换更加精确
-          x: parseFloat((((item.x - west) / (east - west)) * height).toFixed(3)),
-          y: parseFloat((((item.y - south) / (north - south)) * width).toFixed(3)),
+          x: parseFloat((((item.x - west) / (east - west)) * width).toFixed(3)),
+          y: parseFloat((((item.y - south) / (north - south)) * height).toFixed(3)),
           value: item.value,
-          radius: item.radius,
+          radius: item.radius * scale,
         };
+        console.log(point);
         max = Math.max(max, item.value);
         points.push(point);
       }
       // 创建热力图实例
       let heatmapInstance = heatmapFactory.create({
-          container: document.querySelector('#heatmap'),
+        container: document.querySelector('#heatmap'),
       });
 
       let data = {
@@ -165,34 +172,51 @@ export default {
       heatmapInstance.setData(data);
       heatmapInstance.configure(nuConfig)
 
-			let canvas = document.getElementsByClassName('heatmap-canvas');
+			const canvas = document.getElementsByClassName('heatmap-canvas');
       // 查看设定的经纬度范围
-      // viewer.entities.add({
-			// 	name: 'heatmap',
-			// 	rectangle: {
-			// 		coordinates: Cesium.Rectangle.fromDegrees(west, north, east, south),
-			// 		material:  Cesium.Color.RED.withAlpha(0.5)
-			// 	}
-      // });
-      // console.log(canvas[0]);
-			viewer.entities.add({
+      viewer.entities.add({
+				name: 'heatmapBox',
+				rectangle: {
+					coordinates: Cesium.Rectangle.fromDegrees(west, north, east, south),
+					material:  Cesium.Color.RED.withAlpha(0.3)
+				}
+      });
+      console.log(canvas[0]);
+			let point = viewer.entities.add({
 				name: 'heatmap',
 				rectangle: {
-					  coordinates: Cesium.Rectangle.fromDegrees(west, north, east, south),
-					  material: new Cesium.ImageMaterialProperty({
-						image: canvas[0],
-						transparent: true
-					})
-
+          coordinates: Cesium.Rectangle.fromDegrees(west, north, east, south),
+          material: new Cesium.ImageMaterialProperty({
+            image: canvas[0],
+            transparent: true
+          })
 				}
 			});
       for(let item of this.heatMap.pointsList) {
         this.createPoint(Cesium.Cartesian3.fromDegrees(
           item.x,
           item.y,
-        ),)
+        ))
       }
-			viewer.zoomTo(viewer.entities);
+			viewer.zoomTo(point);
+    },
+    // 根据实际经纬度范围创建相应的矩形
+    createCanvas(width, height) {
+      const heatDoc = document.createElement("div");
+      heatDoc.setAttribute("id", `heatmap`);
+      heatDoc.setAttribute("style", `width: ${width}px; height: ${height}px; margin: 0px; display: none;`);
+      document.getElementsByClassName('cesiumWrapper')[0].appendChild(heatDoc);
+    },
+    // 根据经纬度测量实际距离，计算出最大半径值(m)
+    getMaxRadius(bounds, widthValue, heightValue) {
+      const { west, east, south, north } = bounds;
+      const width = getDistance(south, west, south, east) * 1000;
+      const height = getDistance(south, west, north, west) * 1000;
+      return Math.min(widthValue, heightValue) / Math.min(width, height);
+    },
+    // 实际的半径值转换为heatmap插件的半径值
+    getRadiusValue(width, height, radius) {
+
     },
     /**
      *  创建撒点以及广告牌
@@ -208,7 +232,7 @@ export default {
       });
       return point;
     },
-    addMarks: function() {
+    addMarks() {
       // 添加广告牌实体
       let markEnetity = viewer.entities.add({
         name:  "",
@@ -387,11 +411,11 @@ export default {
       // 创建聚簇点
       dataSourcePromise.then((dataSource) => {
         // 随机创建聚合类的点
-        for(let i = 0; i < 100; i++) {
+        for(let i = 0; i < 1000; i++) {
           dataSource.entities.add({
             position: Cesium.Cartesian3.fromDegrees(
-              113.542724 + Math.random() * (113.569568 - 113.542724), 
-              22.246437 + Math.random() * (22.255899 - 22.246437), 
+              113.402724 + Math.random() * (113.569568 - 113.402724), 
+              22.206437 + Math.random() * (22.305899 - 22.206437), 
               0
             ),
             billboard: {
@@ -476,8 +500,7 @@ export default {
         customStyle();
 
       });
-    },
-
+    }
   },
   mounted() {
     this.init();
@@ -497,10 +520,6 @@ export default {
   //   padding: 0;
   //   overflow: hidden;
   // }
-  #heatmap{
-    width: 500px;
-    height: 500px;
-  }
 }
 
 #trackPopUp {
