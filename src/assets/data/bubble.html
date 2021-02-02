@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* 普通项目点 */
+        .project-popup {
+            user-select: none;
+            text-align: left;
+            width: 256px;
+            position: relative;
+            border-radius: 5px;
+            background: rgba(51, 51, 51, .8) 0% 0% no-repeat padding-box;
+        }
+        .project-popup-title {
+            padding: 13px 0px;
+            margin: 0 15px;
+            border-bottom: 1px solid #fff;
+            font-size: 15px;
+            color: #fff;
+        }
+        .project-popup-infoItem-box {
+            color: #fff;
+            margin-top: 15px;
+            padding: 0 24px;
+            display: flex;
+        }
+        .last-item {
+            padding-bottom: 80px;
+        }
+        .project-popup-infoItem-name {
+            flex: 1;
+            width: 70px;
+            font-size: 15px;
+            color: #fff;
+        }
+        .project-popup-infoItem-info {
+            margin-left: 10px;
+            font-size: 15px;
+            color: #fff;
+            flex: 2;
+        }
+        .toDetail {
+            cursor: pointer;
+            position: absolute;
+            bottom: 19px;
+            right: 28px;
+            color: #fff;
+            font-size: 15px;
+            border-bottom: 1px solid #fff;
+        }
+        /* 详细信息点 */
+        .detail-project-popup {
+            position: relative;
+            width: 434px;
+            padding: 30px;
+            box-sizing: border-box;
+            background-color: #000;
+            border-radius: 5px;
+        }
+        .detail-project-popup-title {
+            color: #FF3F3F;
+            font-size: 18px;
+        }
+        .detail-project-popup-infoItem-box {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            color: #A3E8E3;
+        }
+        .detail-project-popup-infoItem-name {
+            color: #A3E8E3;
+            font-size: 14px;
+            width: 65px;
+        }
+        .detail-project-popup-infoItem-info {
+            margin-left: 15px;
+            font-size: 14px;
+            color: #f6f6f6;
+        }
+        .line {
+            height: 1px;
+            background-color: #707070;
+            margin: 20px 0;
+        }
+        .toPeojectDetail {
+            height: 22px;
+            color: #7AFFF6;
+            text-decoration: underline;
+            cursor: pointer;
+            margin-top: 10px;
+            text-align: right;
+        }
+
+        /* 轮播图样式 */
+        * {
+            margin:0;
+            padding:0;
+        }
+        a{
+            text-decoration: none;
+        }
+        .title {
+            color: #7AFFF6;
+            font-size: 20px;
+            height: 50px;
+            line-height: 50px;
+            border-bottom: 1px solid #5C6665;
+        }
+        .container {
+            position: relative;
+            box-sizing: border-box;
+            padding: 0 15px;
+            width: 393px;
+            height: 223px;
+            margin:100px auto 0 auto;
+            background: #000000 0% 0% no-repeat padding-box;
+            color: #7AFFF6;
+            overflow: hidden;
+        }
+        .container .wrap {
+            position: absolute;
+            width: 1965px;
+            height: 173px;
+            z-index: 1;
+        }
+        .content {
+            float: left;
+            width: 393px;
+            height: 173px;
+        }
+        .container .buttons {
+            position: absolute;
+            right: 0px;
+            left: 0;
+            margin: auto;
+            bottom:20px;
+            width: 60px;
+            height: 10px;
+            z-index: 2;
+        }
+        .container .buttons span {
+            margin-left: 5px;
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ccc;;
+            text-align: center;
+            color:white;
+            cursor: pointer;
+        }
+        .container .buttons span.on{
+            background-color: #7AFFF6;
+        }
+        .container .arrow {
+            position: absolute;
+            top: 35%;
+            color: #7AFFF6;
+            padding:0px 14px;
+            border-radius: 50%;
+            font-size: 50px;
+            z-index: 2;
+            display: none;
+        }
+        .container .arrow_left {
+            left: 10px;
+        }
+        .container .arrow_right {
+            right: 10px;
+        }
+        .container .arrow:hover {
+            background-color: rgba(0,0,0,0.2);
+        }
+        /* 第一个框 */
+        .circle-wrap {
+            width: 350px;
+            height: 90px;
+            display: flex;
+            justify-content: space-between;
+            margin: 30px auto 0;
+        }
+        .circle-box {
+            width: 65px;
+            height: 96px;
+            text-align: center;
+        }
+        .circle {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            box-sizing: border-box;
+            line-height: 45px;
+        }
+        .green-text {
+            color:  #64DA46;
+        }
+        .green {
+            border: 10px solid #64DA46;
+        }
+        .yellow-text {
+            color:  #EAFF2C;
+        }
+        .yellow {
+            border: 10px solid #EAFF2C;
+        }
+        .orange-text {
+            color: #F9930E;
+        }
+        .orange {
+            border: 10px solid #F9930E;
+        }
+        .red-text {
+            color: #FF3F3F;
+        }
+        .red {
+            border: 10px solid #FF3F3F;
+        }
+        /* 第二个框 */
+        .alarmPoint {
+            padding: 0 20px;
+        }
+        .alarm-title {
+            margin: 10px 0;
+            color: #7AFFF6;
+            font-size: 15px;
+        }
+        .alarm-project {
+            color: #FFFFFF;
+            font-size: 14px;
+        }
+        /* 第三个框 */
+        .sum-box {
+            padding: 10px 30px 0 ;
+        }
+        .box-wrap {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .sum-desc {
+            width: 80px;
+            font-size: 14px;
+            color: #7AFFF6;
+        }
+        .sum-content {
+            color: #EEEEEE;
+            font-size: 14px;
+        }
+
+        /* 提示框组件样式 */
+        .wrapper {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+            background-color: rgba(0, 0, 0, .7);
+            z-index: 999;
+            display: none;
+        }
+        .message-box {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+            width: 393px;
+            height: 173px;
+            box-sizing: border-box;
+            background: #000000 0% 0% no-repeat padding-box;
+            padding: 0 15px;
+            border-radius: 10px;
+            color: #7AFFF6;
+            user-select: none;
+        }
+        .message-box-title-box {
+            color: #7AFFF6;
+            font-size: 20px;
+            height: 50px;
+            line-height: 50px;
+            border-bottom: 1px solid #5C6665;
+            display: flex;
+            justify-content: space-between;
+        }
+        .close {
+            color: #ccc;
+            cursor: pointer;
+        }
+        .message-content {
+            margin-top: 20px;
+            padding-left: 30px;
+        }
+        .message-confirm-btn {
+            width: 50px;
+            text-align: center;
+            margin: 30px auto 0;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 1px solid #7AFFF6;
+        }
+        .message-confirm-btn:hover {
+            background-color: #7AFFF6;
+            color: #000;
+        }
+    </style>
+    <title>气泡弹窗测试</title>
+</head>
+<body>
+    <!-- 自定义气泡模板预览 -->
+    <div class="project-popup">
+        <div class="project-popup-title">项目信息</div>
+        <div class="project-popup-infoItem-box">
+          <div class="project-popup-infoItem-name">项目名称</div>
+          :
+          <div class="project-popup-infoItem-info">
+            广东广东广东广东广东广东广东广东广东广东广东广东广东广东广东广东广东广东
+          </div>
+        </div>
+        <div class="project-popup-infoItem-box last-item">
+          <div class="project-popup-infoItem-name">报警信息</div>
+          :
+          <div class="project-popup-infoItem-info">红色预警</div>
+        </div>
+        <div class="toDetail" onClick="toDetail()">查看项目详情 →</div>
+    </div>
+    <!-- 选中的项目点模板 -->
+    <div class="detail-project-popup">
+        <div class="detail-project-popup-title">深基坑超控制(一级)</div>
+        <div class="detail-project-popup-infoItem-box">
+            <div class="detail-project-popup-infoItem-name">项目名称</div>
+            :
+            <div class="detail-project-popup-infoItem-info">
+                佛山市第三人民医院（佛山市精神卫生中心）
+            </div>
+        </div>
+        <div class="detail-project-popup-infoItem-box">
+            <div class="detail-project-popup-infoItem-name">项目地址</div>
+            :
+            <div class="detail-project-popup-infoItem-info">
+                石湾镇街道绿景东路南侧
+            </div>
+        </div>
+        <div class="detail-project-popup-infoItem-box">
+            <div class="detail-project-popup-infoItem-name">项目代码</div>
+            :
+            <div class="detail-project-popup-infoItem-info">
+                4406042010030402
+            </div>
+        </div>
+        <div class="line"></div>
+        <div class="detail-project-popup-infoItem-box">
+            <div class="detail-project-popup-infoItem-name">发包单位</div>
+            :
+            <div class="detail-project-popup-infoItem-info">
+                佛山市第三人民医院（佛山市精神卫生中心）
+            </div>
+        </div>
+        <div class="detail-project-popup-infoItem-box">
+            <div class="detail-project-popup-infoItem-name">承包单位</div>
+            :
+            <div class="detail-project-popup-infoItem-info">
+                成龙建设集团有限公司
+            </div>
+        </div>
+        <div class="detail-project-popup-infoItem-box">
+            <div class="detail-project-popup-infoItem-name">施工许可</div>
+            :
+            <div class="detail-project-popup-infoItem-info">
+                440604201903270201
+            </div>
+        </div>
+        <div class="detail-project-popup-infoItem-box">
+            <div class="detail-project-popup-infoItem-name">施工面积</div>
+            :
+            <div class="detail-project-popup-infoItem-info">
+                60613.01平方米
+            </div>
+        </div>
+        <div class="line"></div>
+        <div class="detail-project-popup-infoItem-box">
+            <div class="detail-project-popup-infoItem-name">合同类型</div>
+            :
+            <div class="detail-project-popup-infoItem-info">
+                施工总包
+            </div>
+        </div>
+        <div class="detail-project-popup-infoItem-box">
+            <div class="detail-project-popup-infoItem-name">招标类型</div>
+            :
+            <div class="detail-project-popup-infoItem-info">
+                施工
+            </div>
+        </div>
+        <div class="detail-project-popup-infoItem-box">
+            <div class="detail-project-popup-infoItem-name">招标方式</div>
+            :
+            <div class="detail-project-popup-infoItem-info">
+                公开招标
+            </div>
+        </div>
+        <div class="detail-project-popup-infoItem-box">
+            <div class="detail-project-popup-infoItem-name">签订时间</div>
+            :
+            <div class="detail-project-popup-infoItem-info">
+                2015年1月7日
+            </div>
+        </div>
+        <div class="toPeojectDetail" onClick="toDetail()">查看项目详情→</div>
+    </div>
+    <!-- 气泡轮播 -->
+    <div class="container">
+        <div class="title">禅城区</div>
+        <div class="wrap" style="left: -393px;">
+            <div class="content">
+                <div class="sum-box">
+                    <div class="box-wrap">
+                        <div class="sum-desc">基坑总数:</div>
+                        <div class="sum-content">55</div>
+                    </div>
+                    <div class="box-wrap">
+                        <div class="sum-desc">基坑总面积:</div>
+                        <div class="sum-content">52263553.552 平方米</div>
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                <div class="circle-wrap">
+                    <div class="circle-box green-text">
+                        <div class="circle green">50</div>
+                        <div>正常</div>
+                    </div>
+                    <div class="circle-box yellow-text">
+                        <div class="circle yellow">2</div>
+                        <div>超预警 </div>
+                    </div>
+                    <div class="circle-box orange-text">
+                        <div class="circle orange">5</div>
+                        <div>超报警</div>
+                    </div>
+                    <div class="circle-box red-text">
+                        <div class="circle red">6</div>
+                        <div>超控制</div>
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                <div class="alarmPoint">
+                    <div class="alarm-title">报警项目:</div>
+                    <div class="alarm-project">
+                        季华路南侧、彩虹路北侧A-7地块建设项目幼儿园<br>
+                        佛山市第三人民医院心理卫生大楼<br>
+                        五矿地产奇槎项目（1号楼-4号楼、6号楼-9号楼及地下室）<br>
+                        五矿地产奇槎项目（5号楼、10号楼-15号楼、16号楼及其 地下室）
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                <div class="sum-box">
+                    <div class="box-wrap">
+                        <div class="sum-desc">基坑总数:</div>
+                        <div class="sum-content">55</div>
+                    </div>
+                    <div class="box-wrap">
+                        <div class="sum-desc">基坑总面积:</div>
+                        <div class="sum-content">52263553.552 平方米</div>
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                <div class="circle-wrap">
+                    <div class="circle-box green-text">
+                        <div class="circle green">50</div>
+                        <div>正常</div>
+                    </div>
+                    <div class="circle-box yellow-text">
+                        <div class="circle yellow">2</div>
+                        <div>超预警 </div>
+                    </div>
+                    <div class="circle-box orange-text">
+                        <div class="circle orange">5</div>
+                        <div>超报警</div>
+                    </div>
+                    <div class="circle-box red-text">
+                        <div class="circle red">6</div>
+                        <div>超控制</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="buttons">
+            <span class="on"></span>
+            <span></span>
+            <span></span>
+        </div>
+        <a href="javascript:;" class="arrow arrow_left">&lt;</a>
+        <a href="javascript:;" class="arrow arrow_right">&gt;</a>
+    </div>
+    <!-- 提示框组件 -->
+    <button id="message-box-btn">弹出弹框</button>
+    <div class="wrapper">
+        <div class="message-box">
+            <div class="message-box-title-box">
+                <div class="title">提示</div>
+                <div class="close">X</div>
+            </div>
+            <div class="message-content">
+                还未设置飞行路径
+            </div>
+            <div class="message-confirm-btn">
+                确 认
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    var wrap = document.querySelector(".wrap");
+    var next = document.querySelector(".arrow_right");
+    var prev = document.querySelector(".arrow_left");
+    next.onclick = function () {
+        next_pic();
+    }
+    prev.onclick = function () {
+        prev_pic();
+    }
+    function next_pic () {
+        index++;
+        if(index > 2){
+            index = 0;
+        }
+        showCurrentDot();
+        var newLeft;
+        if(wrap.style.left === "-1572px"){
+            newLeft = -786;
+        }else{
+            newLeft = parseInt(wrap.style.left) - 393;
+        }
+        wrap.style.left = newLeft + "px";
+    }
+    function prev_pic () {
+        index--;
+        if(index < 0){
+            index = 2;
+        }
+        showCurrentDot();
+        var newLeft;
+        if(wrap.style.left === "0px"){
+            newLeft = -1179;
+        }else{
+            newLeft = parseInt(wrap.style.left)+393;
+        }
+        wrap.style.left = newLeft + "px";
+    }
+    var timer = null;
+    function autoPlay () {
+        timer = setInterval(function () {
+            next_pic();
+        },2000);
+    }
+    autoPlay();
+
+    var container = document.querySelector(".container");
+    container.onmouseenter = function () {
+        clearInterval(timer);
+    }
+    container.onmouseleave = function () {
+        autoPlay();    
+    }
+
+    var index = 0;
+    var dots = document.getElementsByTagName("span");
+    function showCurrentDot () {
+        for(var i = 0, len = dots.length; i < len; i++){
+            dots[i].className = "";
+        }
+        dots[index].className = "on";
+    }
+
+    for (var i = 0, len = dots.length; i < len; i++){
+        (function(i){
+            dots[i].onclick = function () {
+                var dis = index - i;
+                if(index == 2 && parseInt(wrap.style.left)!==-1179){
+                    dis = dis - 3;     
+                }
+                //和使用prev和next相同，在最开始的照片5和最终的照片1在使用时会出现问题，导致符号和位数的出错，做相应地处理即可
+                if(index == 0 && parseInt(wrap.style.left)!== -393){
+                    dis = 3 + dis;
+                }
+                wrap.style.left = (parseInt(wrap.style.left) +  dis * 393)+"px";
+                index = i;
+                showCurrentDot();
+            }
+        })(i);            
+    }
+
+
+    const showMessageBoxBtn = document.getElementById('message-box-btn');
+    const messageCloseBtn = document.getElementsByClassName('close')[0];
+    const messageConfirmBtn = document.getElementsByClassName('message-confirm-box')[0];
+    const messageBoxWarpper = document.getElementsByClassName('wrapper')[0];
+    console.log(showMessageBoxBtn);
+    showMessageBoxBtn.onClick = function() {
+        console.log(11);
+        messageBoxWarpper.style.display = 'block'
+    }
+</script>
+</html>
