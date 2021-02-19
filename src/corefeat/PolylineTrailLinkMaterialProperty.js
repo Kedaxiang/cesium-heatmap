@@ -65,13 +65,13 @@ Cesium.Material.PolylineTrailLinkSource =
     }";
 Cesium.Material._materialCache.addMaterial(Cesium.Material.PolylineTrailLinkType, {
     fabric: {
-    type: Cesium.Material.PolylineTrailLinkType,
-    uniforms: {
-        color: new Cesium.Color(1.0, 0.0, 0.0, 0.5),
-        image: Cesium.Material.PolylineTrailLinkImage,
-        time: 0
-    },
-    source: Cesium.Material.PolylineTrailLinkSource
+        type: Cesium.Material.PolylineTrailLinkType,
+        uniforms: {
+            color: new Cesium.Color(1.0, 0.0, 0.0, 0.5),
+            image: Cesium.Material.PolylineTrailLinkImage,
+            time: 0
+        },
+        source: Cesium.Material.PolylineTrailLinkSource
     },
     translucent: function (material) {
         return true;

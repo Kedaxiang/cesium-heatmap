@@ -22,7 +22,10 @@ import HeatmapControl from "@/components/HeatmapControl";
 
 import CircleScan from "../corefeat/CircleScanMaterialProperty";
 import "../corefeat/PolylineTrailLinkMaterialProperty";
-import "../corefeat/PolylineTrailMaterialProperty"
+import "../corefeat/PolylineTrailMaterialProperty";
+import "../corefeat/PolylineTrailWallMaterialProperty"
+
+import * as turf from '@turf/turf'
 
 export default {
   name: "CesiumScene",
@@ -117,7 +120,14 @@ export default {
       // 扩散圆
       this.addCirceScan();
       // 动态纹理线
-      // this.addPolyline();
+      this.addPolyline();
+      this.movePickPosition();
+      // 添加半球
+      this.addHemisphere();
+      // 添加动态迁徙线
+      this.addflyPath();
+      // 添加动态墙
+      this.createWall();
     },
     /*
      *
@@ -803,7 +813,6 @@ export default {
           outlineWidth: 1,
         },
       });
-      console.log(hemisphere.ellipsoid.material);
     },
     getRadius(time) {
       this.radius =
@@ -824,39 +833,47 @@ export default {
      *  cesium着色器，添加动态迁徙线
      */
     addflyPath() {
-      var center = { lon: 114.302312702, lat: 30.598026044 }
+      var center = { lon: 114.302312702, lat: 30.598026044 };
       var cities = [
-        { "lon": 115.028495718, "lat": 30.200814617 },
-        { "lon": 110.795000473, "lat": 32.638540762 },
-        { "lon": 111.267729446, "lat": 30.698151246 },
-        { "lon": 112.126643144, "lat": 32.058588576 },
-        { "lon": 114.885884938, "lat": 30.395401912 },
-        { "lon": 112.190419415, "lat": 31.043949588 },
-        { "lon": 113.903569642, "lat": 30.932054050 },
-        { "lon": 112.226648859, "lat": 30.367904255 },
-        { "lon": 114.861716770, "lat": 30.468634833 },
-        { "lon": 114.317846048, "lat": 29.848946148 },
-        { "lon": 113.371985426, "lat": 31.704988330 },
-        { "lon": 109.468884533, "lat": 30.289012191 },
-        { "lon": 113.414585069, "lat": 30.368350431 },
-        { "lon": 112.892742589, "lat": 30.409306203 },
-        { "lon": 113.160853710, "lat": 30.667483468 },
-        { "lon": 110.670643354, "lat": 31.748540780 }
-      ]
-      let material = new Cesium.PolylineTrailLinkMaterialProperty(Cesium.Color.ORANGE, 3000);
+        { lon: 115.028495718, lat: 30.200814617 },
+        { lon: 110.795000473, lat: 32.638540762 },
+        { lon: 111.267729446, lat: 30.698151246 },
+        { lon: 112.126643144, lat: 32.058588576 },
+        { lon: 114.885884938, lat: 30.395401912 },
+        { lon: 112.190419415, lat: 31.043949588 },
+        { lon: 113.903569642, lat: 30.93205405 },
+        { lon: 112.226648859, lat: 30.367904255 },
+        { lon: 114.86171677,  lat: 30.468634833 },
+        { lon: 114.317846048, lat: 29.848946148 },
+        { lon: 113.371985426, lat: 31.70498833 },
+        { lon: 109.468884533, lat: 30.289012191 },
+        { lon: 113.414585069, lat: 30.368350431 },
+        { lon: 112.892742589, lat: 30.409306203 },
+        { lon: 113.16085371, lat: 30.667483468 },
+        { lon: 110.670643354, lat: 31.74854078 },
+      ];
+      let material = new Cesium.PolylineTrailMaterialProperty(
+        new Cesium.Color.fromCssColorString('#FAF958'),
+        3000
+      );
       for (var j = 0; j < cities.length; j++) {
-        var points = this.parabolaEquation({ pt1: center, pt2: cities[j], height: 50000, num: 100 });
+        var points = this.parabolaEquation({
+          pt1: center,
+          pt2: cities[j],
+          height: 50000,
+          num: 100,
+        });
         var pointArr = [];
         for (var i = 0; i < points.length; i++) {
-          pointArr.push(points[i][0],points[i][1],points[i][2]);
+          pointArr.push(points[i][0], points[i][1], points[i][2]);
         }
         viewer.entities.add({
-          name: 'PolylineTrailLink' + j,
+          name: "PolylineTrailLink" + j,
           polyline: {
             positions: Cesium.Cartesian3.fromDegreesArrayHeights(pointArr),
-            width: 2,
-            material: material
-          }
+            width: 3,
+            material: material,
+          },
         });
       }
 
@@ -864,61 +881,131 @@ export default {
         position: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, 0),
         point: {
           pixelSize: 6,
-          color: Cesium.Color.BLUE
-        }
+          color: Cesium.Color.BLUE,
+        },
       });
       for (var i = 0; i < cities.length; i++) {
         viewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(cities[i].lon, cities[i].lat, 1),
+          position: Cesium.Cartesian3.fromDegrees(
+            cities[i].lon,
+            cities[i].lat,
+            1
+          ),
           point: {
             pixelSize: 6,
-            color: Cesium.Color.RED
-          }
+            color: Cesium.Color.RED,
+          },
         });
       }
-      viewer.flyTo(centerPoint)
     },
     parabolaEquation(options, resultOut) {
       //方程 y=-(4h/L^2)*x^2+h h:顶点高度 L：横纵间距较大者
       let h = options.height && options.height > 5000 ? options.height : 5000;
-      let L = Math.abs(options.pt1.lon - options.pt2.lon) > Math.abs(options.pt1.lat - options.pt2.lat) ? Math.abs(options.pt1.lon - options.pt2.lon) : Math.abs(options.pt1.lat - options.pt2.lat);
+      let L =
+        Math.abs(options.pt1.lon - options.pt2.lon) >
+        Math.abs(options.pt1.lat - options.pt2.lat)
+          ? Math.abs(options.pt1.lon - options.pt2.lon)
+          : Math.abs(options.pt1.lat - options.pt2.lat);
       let num = options.num && options.num > 50 ? options.num : 50;
       let result = [];
       let dlt = L / num;
-      if (Math.abs(options.pt1.lon - options.pt2.lon) > Math.abs(options.pt1.lat - options.pt2.lat)) {//以lon为基准
-          let delLat = (options.pt2.lat - options.pt1.lat) / num;
-          if (options.pt1.lon - options.pt2.lon > 0) {
-              dlt = -dlt;
-          }
-          for (let i = 0; i < num; i++) {
-              let tempH = h - Math.pow((-0.5 * L + Math.abs(dlt) * i), 2) * 4 * h / Math.pow(L, 2);
-              let lon = options.pt1.lon + dlt * i;
-              let lat = options.pt1.lat + delLat * i;
-              result.push([lon, lat, tempH]);
-          }
-      } else {//以lat为基准
-          let delLon = (options.pt2.lon - options.pt1.lon) / num;
-          if (options.pt1.lat - options.pt2.lat > 0) {
-              dlt = -dlt;
-          }
-          for (let i = 0; i < num; i++) {
-              let tempH = h - Math.pow((-0.5 * L + Math.abs(dlt) * i), 2) * 4 * h / Math.pow(L, 2);
-              let lon = options.pt1.lon + delLon * i;
-              let lat = options.pt1.lat + dlt * i;
-              result.push([lon, lat, tempH]);
-          }
+      if (
+        Math.abs(options.pt1.lon - options.pt2.lon) >
+        Math.abs(options.pt1.lat - options.pt2.lat)
+      ) {
+        //以lon为基准
+        let delLat = (options.pt2.lat - options.pt1.lat) / num;
+        if (options.pt1.lon - options.pt2.lon > 0) {
+          dlt = -dlt;
+        }
+        for (let i = 0; i < num; i++) {
+          let tempH =
+            h -
+            (Math.pow(-0.5 * L + Math.abs(dlt) * i, 2) * 4 * h) /
+              Math.pow(L, 2);
+          let lon = options.pt1.lon + dlt * i;
+          let lat = options.pt1.lat + delLat * i;
+          result.push([lon, lat, tempH]);
+        }
+      } else {
+        //以lat为基准
+        let delLon = (options.pt2.lon - options.pt1.lon) / num;
+        if (options.pt1.lat - options.pt2.lat > 0) {
+          dlt = -dlt;
+        }
+        for (let i = 0; i < num; i++) {
+          let tempH =
+            h -
+            (Math.pow(-0.5 * L + Math.abs(dlt) * i, 2) * 4 * h) /
+              Math.pow(L, 2);
+          let lon = options.pt1.lon + delLon * i;
+          let lat = options.pt1.lat + dlt * i;
+          result.push([lon, lat, tempH]);
+        }
       }
       if (resultOut != undefined) {
-          resultOut = result;
+        resultOut = result;
       }
       return result;
-    }
+    },
+    /**
+     *  墙
+     */
+    createWall() {
+      let positions = [
+        [113.24215, 23.02556],
+        [113.24247, 23.02556],
+        [113.24247, 23.02581],
+        [113.24215, 23.02581],
+        [113.24215, 23.02556]
+      ]
+      const height = 20;
+      let scale = 1;
+      let wall = viewer.entities.add({
+        name: "PolygonWall",
+        wall: {
+          positions: new Cesium.CallbackProperty(function () {
+              scale += 0.06;
+              if (scale > 6) {
+                  scale = 1;
+              }
+              var poly = turf.polygon([positions]);
+              var scaledPoly = turf.transformScale(poly, scale);
+              var newPositions = [];
+              for (let i = 0; i < scaledPoly.geometry.coordinates[0].length; i++) {
+                  scaledPoly.geometry.coordinates[0][i].forEach(function (element) {
+                      newPositions.push(element);
+                  })
+                  newPositions.push(height);
+              }
+              return Cesium.Cartesian3.fromDegreesArrayHeights(newPositions);
+          }, false),//按比例缩放
+          // material: new Cesium.PolylineTrailWallMaterialProperty(
+          //   Cesium.Color.RED,
+          //   3000
+          // ),
+          // material: require('../assets/polyline/color.png')
+          material: new Cesium.ImageMaterialProperty({
+              image: require('../assets/polyline/blue_2.png'),
+              transparent: true,
+              // color: new Cesium.ColorMaterialProperty(
+              //   new Cesium.CallbackProperty(function() {
+              //     alpha = 1 - ((scale - 1) / 5);
+              //     if(alpha < 0) alpha = 1; 
+              //     // console.log(Cesium.Color.WHITE.withAlpha(alpha));
+              //     return Cesium.Color.WHITE.withAlpha(alpha)
+              //   }, false)
+              // ),
+              color: Cesium.Color.WHITE.withAlpha(0.3)
+          }),
+        },
+      });
+      console.log(wall);
+      viewer.flyTo(wall); //相机到entity的位置
+    },
   },
   mounted() {
     this.init();
-    this.movePickPosition();
-    this.addHemisphere();
-    this.addflyPath();
   },
 };
 </script>
