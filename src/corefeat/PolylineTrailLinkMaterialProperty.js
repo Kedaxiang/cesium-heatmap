@@ -32,7 +32,7 @@ class PolylineTrailLinkMaterialProperty {
     equals(other) {
         return this === other ||
             (other instanceof PolylineTrailLinkMaterialProperty &&
-                Property.equals(this._color, other._color))
+                Cesium.Property.equals(this._color, other._color))
     }
 }
 

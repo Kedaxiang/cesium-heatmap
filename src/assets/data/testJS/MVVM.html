@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据双向绑定测试</title>
+</head>
+<body>
+    <input type="text" id="Input">
+    <p id="show"></p>
+</body>
+<script type="text/javascript">
+    let obj = {};
+    Object.defineProperty(obj, 'propertyname', {
+        get: function() {
+            return obj;
+        },
+        set: function(newVal) {
+            document.getElementById('Input').value = newVal;
+            document.getElementById('show').innerHTML = newVal;
+        }
+    })
+    document.getElementById('Input').onkeyup = (e) => {
+        obj.propertyname = e.target.value
+    } 
+    setInterval(() => {
+        obj.propertyname = '88888'
+    }, 3000)
+</script>
+</html>

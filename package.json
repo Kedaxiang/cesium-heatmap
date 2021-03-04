@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@turf/turf": "^6.3.0",
+    "axios": "^0.21.1",
     "cesium": "^1.76.0",
     "core-js": "^3.6.5",
     "vue": "^2.6.11",

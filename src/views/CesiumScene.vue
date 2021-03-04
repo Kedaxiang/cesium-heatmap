@@ -23,9 +23,13 @@ import HeatmapControl from "@/components/HeatmapControl";
 import CircleScan from "../corefeat/CircleScanMaterialProperty";
 import "../corefeat/PolylineTrailLinkMaterialProperty";
 import "../corefeat/PolylineTrailMaterialProperty";
-import "../corefeat/PolylineTrailWallMaterialProperty"
+import "../corefeat/PolylineTrailWallMaterialProperty";
 
-import * as turf from '@turf/turf'
+import ConditionsLayer from "../assets/data/geojson/topo_lane_xu.json";
+
+import * as turf from "@turf/turf";
+
+import { roadHighlight } from "../corefeat/core/effect/index";
 
 export default {
   name: "CesiumScene",
@@ -128,6 +132,8 @@ export default {
       this.addflyPath();
       // 添加动态墙
       this.createWall();
+      // 添加路网
+      this.createRoad();
     },
     /*
      *
@@ -667,8 +673,8 @@ export default {
         );
         let lat = Cesium.Math.toDegrees(cartographic.latitude);
         let lng = Cesium.Math.toDegrees(cartographic.longitude);
-        console.log(lng, lat);
-        console.log(distanceCompute.getBounds(lng, lat));
+        // console.log(lng, lat);
+        // console.log(distanceCompute.getBounds(lng, lat));
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
     },
     /**
@@ -787,12 +793,15 @@ export default {
             lon + 0.03,
             lat + 0.0113,
             0,
+            lon + 0.045,
+            lat + 0.0118,
+            0,
             // lon + 10, lat + 10, 0,
           ]),
           width: 5,
           material: new Cesium.PolylineTrailLinkMaterialProperty(
             Cesium.Color.ORANGE,
-            500
+            1000
           ),
         },
       });
@@ -843,7 +852,7 @@ export default {
         { lon: 112.190419415, lat: 31.043949588 },
         { lon: 113.903569642, lat: 30.93205405 },
         { lon: 112.226648859, lat: 30.367904255 },
-        { lon: 114.86171677,  lat: 30.468634833 },
+        { lon: 114.86171677, lat: 30.468634833 },
         { lon: 114.317846048, lat: 29.848946148 },
         { lon: 113.371985426, lat: 31.70498833 },
         { lon: 109.468884533, lat: 30.289012191 },
@@ -853,7 +862,7 @@ export default {
         { lon: 110.670643354, lat: 31.74854078 },
       ];
       let material = new Cesium.PolylineTrailMaterialProperty(
-        new Cesium.Color.fromCssColorString('#FAF958'),
+        new Cesium.Color.fromCssColorString("#FAF958"),
         3000
       );
       for (var j = 0; j < cities.length; j++) {
@@ -957,51 +966,78 @@ export default {
         [113.24247, 23.02556],
         [113.24247, 23.02581],
         [113.24215, 23.02581],
-        [113.24215, 23.02556]
-      ]
+        [113.24215, 23.02556],
+      ];
       const height = 20;
       let scale = 1;
       let wall = viewer.entities.add({
         name: "PolygonWall",
         wall: {
           positions: new Cesium.CallbackProperty(function () {
-              scale += 0.06;
-              if (scale > 6) {
-                  scale = 1;
-              }
-              var poly = turf.polygon([positions]);
-              var scaledPoly = turf.transformScale(poly, scale);
-              var newPositions = [];
-              for (let i = 0; i < scaledPoly.geometry.coordinates[0].length; i++) {
-                  scaledPoly.geometry.coordinates[0][i].forEach(function (element) {
-                      newPositions.push(element);
-                  })
-                  newPositions.push(height);
-              }
-              return Cesium.Cartesian3.fromDegreesArrayHeights(newPositions);
-          }, false),//按比例缩放
+            scale += 0.06;
+            if (scale > 6) {
+              scale = 1;
+            }
+            var poly = turf.polygon([positions]);
+            var scaledPoly = turf.transformScale(poly, scale);
+            var newPositions = [];
+            for (
+              let i = 0;
+              i < scaledPoly.geometry.coordinates[0].length;
+              i++
+            ) {
+              scaledPoly.geometry.coordinates[0][i].forEach(function (element) {
+                newPositions.push(element);
+              });
+              newPositions.push(height);
+            }
+            return Cesium.Cartesian3.fromDegreesArrayHeights(newPositions);
+          }, false), //按比例缩放
           // material: new Cesium.PolylineTrailWallMaterialProperty(
           //   Cesium.Color.RED,
           //   3000
           // ),
           // material: require('../assets/polyline/color.png')
           material: new Cesium.ImageMaterialProperty({
-              image: require('../assets/polyline/blue_2.png'),
-              transparent: true,
-              // color: new Cesium.ColorMaterialProperty(
-              //   new Cesium.CallbackProperty(function() {
-              //     alpha = 1 - ((scale - 1) / 5);
-              //     if(alpha < 0) alpha = 1; 
-              //     // console.log(Cesium.Color.WHITE.withAlpha(alpha));
-              //     return Cesium.Color.WHITE.withAlpha(alpha)
-              //   }, false)
-              // ),
-              color: Cesium.Color.WHITE.withAlpha(0.3)
+            image: require("../assets/polyline/blue_2.png"),
+            transparent: true,
+            // color: new Cesium.ColorMaterialProperty(
+            //   new Cesium.CallbackProperty(function() {
+            //     alpha = 1 - ((scale - 1) / 5);
+            //     if(alpha < 0) alpha = 1;
+            //     // console.log(Cesium.Color.WHITE.withAlpha(alpha));
+            //     return Cesium.Color.WHITE.withAlpha(alpha)
+            //   }, false)
+            // ),
+            color: Cesium.Color.WHITE.withAlpha(0.3),
           }),
         },
       });
-      console.log(wall);
-      viewer.flyTo(wall); //相机到entity的位置
+      // console.log(wall);
+      // viewer.flyTo(wall); //相机到entity的位置
+    },
+    /**
+     * 创建路网
+     */
+    createRoad() {
+      // roadHighlight.addRoad(ConditionsLayer);
+      // roadHighlight.mouseEvent();
+
+      let promise = Cesium.GeoJsonDataSource.load(ConditionsLayer);
+      this._promiseEntity = viewer.dataSources.add(promise);
+      promise.then((dataSource) => {
+        let entities = dataSource.entities.values;
+        for (let o = 0; o < entities.length; o++) {
+          let r = entities[o];
+          r.nameID = o; //给每条线添加一个编号，方便之后对线修改样式
+          r.polyline.width = 2; //添加默认样式
+          r.polyline.material = new Cesium.PolylineTrailLinkMaterialProperty(
+            Cesium.Color.ORANGE,
+            1000
+          )
+        }
+      });
+      viewer.flyTo(promise);
     },
   },
   mounted() {
