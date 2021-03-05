@@ -111,29 +111,31 @@ export default {
         Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK
       );
       window.viewer = viewer;
-      // 此处热力图的边框如果是计算出来的话，会使得heatmap的数据无法塞入
-      this.heatMap.bounds = this.getHeatmapBounds(this.heatMap.pointsList);
-      // 热力图
-      this.createHeatMap(this.heatMap.bounds, this.heatMap.pointsList);
-      // 撒点
-      this.addMarks();
-      // 自定义气泡框
-      this.getBubble();
-      // 点聚合
-      this.getDataSource();
-      // 扩散圆
-      this.addCirceScan();
-      // 动态纹理线
-      this.addPolyline();
-      this.movePickPosition();
-      // 添加半球
-      this.addHemisphere();
-      // 添加动态迁徙线
-      this.addflyPath();
-      // 添加动态墙
-      this.createWall();
+      // // 此处热力图的边框如果是计算出来的话，会使得heatmap的数据无法塞入
+      // this.heatMap.bounds = this.getHeatmapBounds(this.heatMap.pointsList);
+      // // 热力图
+      // this.createHeatMap(this.heatMap.bounds, this.heatMap.pointsList);
+      // // 撒点
+      // this.addMarks();
+      // // 自定义气泡框
+      // this.getBubble();
+      // // 点聚合
+      // this.getDataSource();
+      // // 扩散圆
+      // this.addCirceScan();
+      // // 动态纹理线
+      // this.addPolyline();
+      // this.movePickPosition();
+      // // 添加半球
+      // this.addHemisphere();
+      // // 添加动态迁徙线
+      // this.addflyPath();
+      // // 添加动态墙
+      // this.createWall();
       // 添加路网
       this.createRoad();
+      // 添加白膜
+      this.createTileset();
     },
     /*
      *
@@ -1034,10 +1036,98 @@ export default {
           r.polyline.material = new Cesium.PolylineTrailLinkMaterialProperty(
             Cesium.Color.ORANGE,
             1000
-          )
+          );
         }
       });
-      viewer.flyTo(promise);
+      // viewer.flyTo(promise);
+    },
+
+    /**
+     * 创建白膜
+     *
+     */
+    createTileset() {
+      var bmTileset = new Cesium.Cesium3DTileset({
+        url:
+          "http://qiniu-cimbase.v-support.cn/data/3dtiles/HEMC3/tileset.json", //  ./data/3dtiles-lab/tileset.json
+      });
+      viewer.scene.primitives.add(bmTileset);
+      bmTileset.readyPromise
+        .then(function (tileset) {
+          var boundingSphere = tileset.boundingSphere;
+          viewer.camera.viewBoundingSphere(
+            boundingSphere,
+            new Cesium.HeadingPitchRange(0, -2.0, 0)
+          );
+          viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+
+          tileset.style = new Cesium.Cesium3DTileStyle({
+            color: {
+              conditions: [
+                ["true", "rgba(0, 127.5, 255 ,1)"], //'rgb(127, 59, 8)']
+              ],
+            },
+          });
+          // console.log(tileset);
+          tileset.tileVisible.addEventListener(function (tile) {
+            var content = tile.content;
+            var featuresLength = content.featuresLength;
+            for (var i = 0; i < featuresLength; i += 2) {
+              let feature = content.getFeature(i);
+              let model = feature.content._model;
+
+              if (model && model._sourcePrograms && model._rendererResources) {
+                Object.keys(model._sourcePrograms).forEach((key) => {
+                  let program = model._sourcePrograms[key];
+                  let fragmentShader =
+                    model._rendererResources.sourceShaders[
+                      program.fragmentShader
+                    ];
+                  let v_position = "";
+                  if (fragmentShader.indexOf(" v_positionEC;") != -1) {
+                    v_position = "v_positionEC";
+                  } else if (fragmentShader.indexOf(" v_pos;") != -1) {
+                    v_position = "v_pos";
+                  }
+                  const color = `vec4(${feature.color.toString()})`;
+
+                  model._rendererResources.sourceShaders[
+                    program.fragmentShader
+                  ] =
+                    "varying vec3 " +
+                    v_position +
+                    ";\n" +
+                    "void main(void){\n" +
+                    "    vec4 position = czm_inverseModelView * vec4(" +
+                    v_position +
+                    ",1);\n" +
+                    "    float glowRange = 360.0;\n" +
+                    "    gl_FragColor = " +
+                    color +
+                    ";\n" +
+                    // "    gl_FragColor = vec4(0.2,  0.5, 1.0, 1.0);\n" +
+                    "    gl_FragColor *= vec4(vec3(position.z / 20.0), 1.0);\n" +
+                    "    float time = fract(czm_frameNumber / 360.0);\n" +
+                    "    time = abs(time - 0.5);\n" +
+                    "    float diff = step(0.005, abs( clamp(position.z / glowRange, 0.0, 1.0) - time));\n" +
+                    "    gl_FragColor.rgb += gl_FragColor.rgb * (1.0 - diff);\n" +
+                    "}\n";
+                });
+                model._shouldRegenerateShaders = true;
+              }
+            }
+          });
+        })
+        .otherwise(function (error) {
+          console.error(error);
+        });
+
+      // for (let i = 0; i < viewer.imageryLayers.length; i++) {
+      //   let imageryLayer = viewer.imageryLayers.get(i);
+      //   imageryLayer.brightness = 0.1;
+      // }
+      // viewer.flyTo(tileset);
+      // console.log(bmTileset);
     },
   },
   mounted() {
